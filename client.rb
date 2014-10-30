@@ -1,46 +1,51 @@
 require 'net/http'
-require 'json'
 require './decoder'
 
-@server_uri = 'http://localhost:4567'
-@decoder_algorithm_index = 1
-@challenge_uri = '/'
-@challenge_word = ''
-@decoder = Decoder.new
-@next_challenge = true
+TOTAL_CHALLENGES = 6
+SERVER_URI = 'http://localhost:4567'
+CHALLENGE_URI = "#{SERVER_URI}/word"
+ANSWER_URI = "#{SERVER_URI}/answer?answer="
+
 
 def self.getChallenge
-  uri = URI("#{@server_uri}#{@challenge_uri}word")
-  @challenge_word = Net::HTTP.get(uri).strip
-  puts "\nChallenge word: #{@challenge_word}"
+  uri = URI(CHALLENGE_URI)
+  challenge_word = Net::HTTP.get(uri).strip
+  puts "\nChallenge word: #{challenge_word}"
+  challenge_word
 end
 
-def self.resolveChallenge
-  decoded_word = @decoder.send("decoder_#{@decoder_algorithm_index}", @challenge_word)
+def self.resolveChallenge(challenge_number, challenge_word)
+  decoded_word = Decoder.send("decoder_#{challenge_number}", challenge_word)
   puts "\nDecoded word: #{decoded_word}"
   decoded_word
 end
 
 def self.answerChallenge(answer)
-  uri = URI("#{@server_uri}#{@challenge_uri}#{@challenge_word}")
-  response = Net::HTTP.post_form(uri, 'answer' => answer)
-  response_hash = JSON.parse(response.body)
-  result = response_hash['result']
-  @challenge_uri = response_hash['next_url']
-  clue = response_hash['clue']
-  if result == 'OK'
-    @decoder_algorithm_index += 1
-    puts "\nPerfect!"
-    puts 'Try the new challenge.' if @challenge_uri
-    puts "Clue: #{clue}" if clue
+  uri = URI("#{ANSWER_URI}#{answer}")
+  response = Net::HTTP.get(uri)
+  if response.include?('OK')
+    puts response
+    challenge_success = true
   else
-    puts "\nYou failed. Try again!"
+    puts response
+    challenge_success = false
   end
-  @challenge_uri ? true : false
+  challenge_success
 end
 
-while @next_challenge do
-  getChallenge
-  answer = resolveChallenge
-  @next_challenge = answerChallenge(answer)
+# Initialize challenges
+challenge_number = 1
+challenge_success = false
+
+# Main loop to pass through all challenges
+loop do
+  challenge_word = getChallenge
+  answer = resolveChallenge(challenge_number, challenge_word)
+  challenge_success = answerChallenge(answer)
+  # If success go to the next challenge
+  challenge_number += 1 if challenge_success
+  # Exit if all challenges are completed
+  break if ( (challenge_number == TOTAL_CHALLENGES + 1) && challenge_success)
 end
+
+puts "\nCHALLENGE COMPLETED!!!"

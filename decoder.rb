@@ -1,30 +1,41 @@
 class Decoder
 
-  def decoder_1(word)
+  # Noop
+  def self.decoder_1(word)
     word
   end
 
-  def decoder_2(word)
+  # Reverse
+  def self.decoder_2(word)
     word.reverse
   end
 
-  def decoder_3(word)
+  # Vowels to numbers
+  def self.decoder_3(word)
     word.tr('43106','aeiou')
   end
 
-  def decoder_4(word)
-    rotations = word.size - 2
-    word.split('').rotate(rotations).join
+  # Rotate
+  def self.decoder_4(word)
+    word.split('').rotate(-3).join
   end
 
-  def decoder_5(word)
-    first_word = word.split('')
-    second_word = word.upcase.split('')
-    new_word = ''
-    first_word.each_with_index {|item, index|
-      new_word += first_word[index] if first_word[index] == second_word[index]
-    }
-    new_word_number_decoded = decoder_3(new_word)
-    new_word_number_decoded.downcase
+  # Vowel obfuscate
+  def self.decoder_5(word)
+    vowels = %w{a e i o u}
+    word.split('').map{| char| (char == '*') ? vowels.sample : char }.join
+  end
+
+  # Caesar algorithm
+  def self.decoder_6(word)
+    alphabet = ('a'..'z').to_a
+    rotated_alphabet = alphabet.rotate(-5)
+    word.split('').map{|char| rotated_alphabet[alphabet.index(char)] }.join
+  end
+
+  # Simple random obfuscate
+  def self.decoder_7(word)
+    new_word = word.split('').map {|char| (char.upcase == char) ? char : '' }.join
+    decoder_3(new_word).downcase
   end
 end
